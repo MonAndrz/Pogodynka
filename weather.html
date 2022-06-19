@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Pogodynka</title>
+</head>
+<style>
+  .loading {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: #fff url('ikonki/loading.svg') no-repeat center center;
+    z-index: 9999;
+    opacity: 0.5;
+  }
+
+  .error {
+    background-color: #fce4e4;
+    border: 1px solid #fcc2c3;
+    display: block;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  div {
+    width: 100%;
+    border-radius: 5px;
+    padding: 20px;
+    display: block;
+  }
+
+  .container {
+    padding: 20px 0px;
+    display: flex;
+    background-color: rgba(206, 212, 218, 0.5);;
+  }
+
+  .modul {
+    padding: 20px;
+    margin: 10px;
+    border: 1px solid rgb(163, 62, 141);
+  }
+
+  h3 {
+    text-align: center;
+    font-size: 40px;
+  }
+
+  img {
+    top: 50%
+  }
+
+  .column {
+    float: left;
+    width: 33.33%;
+    padding: 5px;
+  }
+
+  .pogodaAktualna {
+    display: flex;
+  }
+
+  select {
+    width: 100%;
+    background-color: white;
+    color: gray;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  option{
+    text-align: center;
+  }
+
+  
+  button {
+    width: 100%;
+	background-color: white;
+	border-color: gray;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background-color: gray;
+	color: white;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  
+  body {
+	background-color: #f2f2f2;
+	font-family: "Open Sans", Helvetica, Arial, sans-serif;
+	font-size: 18px;
+	font-weight: 400;
+	-webkit-font-smoothing: antialiased;
+	overflow-x: hidden;
+	color: #212529;
+  }
+</style>
+
+<body>
+  <h3>Pogodynka</h3>
+  <div id="spinner"></div>
+  <div class="container">
+    <div class="modul">
+      <select id="wybierajka">
+        <option value="" selected disabled hidden>Wybierz Miasto</option>
+      </select>
+      <button id="przycisk" disabled>Pobierz prognozę pogody!</button>
+      <span class="error hidden">Coś poszło nie tak</span>
+    </div>
+    <div class="modul">
+      <h2>Pogoda aktualna</h2>
+      <div class="pogodaAktualna">
+        <div class="column">
+          <div>Temperatura: <span class="temp"></span></div>
+          <div>Kierunek wiatru: <span class="wiatr"></span></div>
+          <div>Opis: <span class="opis"></span></div>
+          <div>Zachmurzenie: <span class="zachmurzenie"></span></div>
+        </div>
+        <div class="column">
+          <img class="ikonka hidden" height="50px" width="50px">
+        </div>
+      </div>
+    </div>
+    <div class="modul">
+      <h2>Prognoza na jutro</h2>
+      <div class="pogodaJutro">
+        <div class="column">
+          <div>Temperatura: <span class="temp"></span></div>
+          <div>Kierunek wiatru: <span class="wiatr"></span></div>
+          <div>Opis: <span class="opis"></span></div>
+          <div>Zachmurzenie: <span class="zachmurzenie"></span></div>
+        </div>
+        <div class="column">
+          <img class="ikonka hidden" height="50px" width="50px">
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+
+    let url = "https://weather-api-alpha.herokuapp.com/pogoda/prognoza?miasto=";
+    let selectedUrl = "";
+    let spinnerElement = document.querySelector("#spinner");
+    let elementDzisTemp = document.querySelector(".pogodaAktualna .temp");
+    let elementDzisWiatr = document.querySelector(".pogodaAktualna .wiatr");
+    let elementDzisOpis = document.querySelector(".pogodaAktualna .opis");
+    let elementDzisZachmurzenie = document.querySelector(".pogodaAktualna .zachmurzenie");
+    let elementDzisIkona = document.querySelector(".pogodaAktualna .ikonka");
+
+    let elementJutroTemp = document.querySelector(".pogodaJutro .temp");
+    let elementJutroWiatr = document.querySelector(".pogodaJutro .wiatr");
+    let elementJutroOpis = document.querySelector(".pogodaJutro .opis");
+    let elementJutroZachmurzenie = document.querySelector(".pogodaJutro .zachmurzenie");
+    let elementJutroIkona = document.querySelector(".pogodaJutro .ikonka");
+
+    let elementError = document.querySelector(".error");
+
+    let elementPrzycisk = document.querySelector("#przycisk");
+
+    let selectElement = document.querySelector("#wybierajka");
+
+    function pobierzDane() {
+	spinnerElement.classList.remove("hidden");
+      spinnerElement.classList.add("loading");
+      fetch(selectedUrl).then((odpowiedz) => {
+        if (odpowiedz.ok) {
+          return odpowiedz.json();
+        }
+        throw new Error('Something went wrong');
+      })
+        .then(
+          function (dane) {
+            elementDzisTemp.innerHTML = dane.teraz.temperatura + "°C";
+            elementDzisWiatr.innerHTML = dane.teraz.wiatrKierunekSłownie;
+            elementDzisOpis.innerHTML = dane.teraz.opis;
+            elementDzisZachmurzenie.innerHTML = dane.teraz.zachmurzenie + "%";
+            elementDzisIkona.src = "./ikonki/" + dane.teraz.ikonka + ".png";
+
+            elementJutroTemp.innerHTML = dane.prognoza.jutro.temperatura + "°C";
+            elementJutroWiatr.innerHTML = dane.prognoza.jutro.wiatrKierunekSłownie;
+            elementJutroOpis.innerHTML = dane.prognoza.jutro.opis;
+            elementJutroZachmurzenie.innerHTML = dane.prognoza.jutro.zachmurzenie + "%";
+            elementJutroIkona.src = "./ikonki/" + dane.prognoza.jutro.ikonka + ".png";
+
+            spinnerElement.classList.remove("loading");
+            elementDzisIkona.classList.remove("hidden");
+            elementJutroIkona.classList.remove("hidden");
+            elementError.classList.add("hidden");
+			spinnerElement.classList.add("hidden");
+          }
+        )
+        .catch((error) => {
+          console.log(error);
+          spinnerElement.classList.remove("loading");
+          elementError.classList.remove("hidden");
+        });
+    }
+
+    function pobierzMiasta() {
+      fetch("https://weather-api-alpha.herokuapp.com/pogoda/miasta").then((odpowiedz) => {
+        if (odpowiedz.ok) {
+          return odpowiedz.json();
+        }
+        throw new Error('Something went wrong');
+      })
+        .then(
+          function (dane) {
+            dane.forEach(function (element) {
+              let nowyOption = document.createElement("option");
+              nowyOption.innerHTML = element.nazwa;
+              selectElement.appendChild(nowyOption);
+            });
+          }
+        )
+        .catch((error) => {
+          console.log(error);
+          bodyElement.classList.remove("loading");
+          elementError.classList.remove("hidden");
+        });
+    }
+
+    pobierzMiasta();
+    document.querySelector("#przycisk").addEventListener("click", pobierzDane);
+    selectElement.addEventListener("change", function () {
+      elementPrzycisk.disabled = false;
+      selectedUrl = url + selectElement.value;
+    });
+
+  </script>
+</body>
+
+</html>
